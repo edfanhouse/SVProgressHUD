@@ -68,11 +68,8 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
     static dispatch_once_t once;
     
     static SVProgressHUD *sharedView;
-#if !defined(SV_APP_EXTENSIONS)
-    dispatch_once(&once, ^{ sharedView = [[self alloc] initWithFrame:[[[UIApplication sharedApplication] delegate] window].bounds]; });
-#else
     dispatch_once(&once, ^{ sharedView = [[self alloc] initWithFrame:[[UIScreen mainScreen] bounds]]; });
-#endif
+
     return sharedView;
 }
 
@@ -657,12 +654,6 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
     CGFloat keyboardHeight = 0.0f;
     double animationDuration = 0.0;
 
-#if !defined(SV_APP_EXTENSIONS) && TARGET_OS_IOS
-    self.frame = [[[UIApplication sharedApplication] delegate] window].bounds;
-    UIInterfaceOrientation orientation = UIApplication.sharedApplication.statusBarOrientation;
-#elif !defined(SV_APP_EXTENSIONS) && !TARGET_OS_IOS
-    self.frame= [UIApplication sharedApplication].keyWindow.bounds;
-#else
     if (self.viewForExtension) {
         self.frame = self.viewForExtension.frame;
     } else {
@@ -670,7 +661,6 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
     }
 #if TARGET_OS_IOS
     UIInterfaceOrientation orientation = CGRectGetWidth(self.frame) > CGRectGetHeight(self.frame) ? UIInterfaceOrientationLandscapeLeft : UIInterfaceOrientationPortrait;
-#endif
 #endif
     
 #if TARGET_OS_IOS
@@ -694,12 +684,7 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
     
     // Get the currently active frame of the display (depends on orientation)
     CGRect orientationFrame = self.bounds;
-
-#if !defined(SV_APP_EXTENSIONS) && TARGET_OS_IOS
-    CGRect statusBarFrame = UIApplication.sharedApplication.statusBarFrame;
-#else
     CGRect statusBarFrame = CGRectZero;
-#endif
     
     if (_motionEffectEnabled) {
 #if TARGET_OS_IOS
@@ -1041,10 +1026,7 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
                                                                       userInfo:[strongSelf notificationUserInfo]];
                     
                     // Tell the rootViewController to update the StatusBar appearance
-#if !defined(SV_APP_EXTENSIONS) && TARGET_OS_IOS
-                    UIViewController *rootController = [[UIApplication sharedApplication] keyWindow].rootViewController;
-                    [rootController setNeedsStatusBarAppearanceUpdate];
-#endif
+
                     
                     // Run an (optional) completionHandler
                     if (completion) {
@@ -1232,12 +1214,7 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
     }
     
     // Update frames
-#if !defined(SV_APP_EXTENSIONS)
-    CGRect windowBounds = [[[UIApplication sharedApplication] delegate] window].bounds;
-    _controlView.frame = windowBounds;
-#else
     _controlView.frame = [UIScreen mainScreen].bounds;
-#endif
     
     return _controlView;
 }
@@ -1345,52 +1322,10 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
 #pragma mark - Helper
     
 - (CGFloat)visibleKeyboardHeight {
-#if !defined(SV_APP_EXTENSIONS)
-    UIWindow *keyboardWindow = nil;
-    for (UIWindow *testWindow in UIApplication.sharedApplication.windows) {
-        if(![testWindow.class isEqual:UIWindow.class]) {
-            keyboardWindow = testWindow;
-            break;
-        }
-    }
-    
-    for (__strong UIView *possibleKeyboard in keyboardWindow.subviews) {
-        NSString *viewName = NSStringFromClass(possibleKeyboard.class);
-        if([viewName hasPrefix:@"UI"]){
-            if([viewName hasSuffix:@"PeripheralHostView"] || [viewName hasSuffix:@"Keyboard"]){
-                return CGRectGetHeight(possibleKeyboard.bounds);
-            } else if ([viewName hasSuffix:@"InputSetContainerView"]){
-                for (__strong UIView *possibleKeyboardSubview in possibleKeyboard.subviews) {
-                    viewName = NSStringFromClass(possibleKeyboardSubview.class);
-                    if([viewName hasPrefix:@"UI"] && [viewName hasSuffix:@"InputSetHostView"]) {
-                        CGRect convertedRect = [possibleKeyboard convertRect:possibleKeyboardSubview.frame toView:self];
-                        CGRect intersectedRect = CGRectIntersection(convertedRect, self.bounds);
-                        if (!CGRectIsNull(intersectedRect)) {
-                            return CGRectGetHeight(intersectedRect);
-                        }
-                    }
-                }
-            }
-        }
-    }
-#endif
     return 0;
 }
     
 - (UIWindow *)frontWindow {
-#if !defined(SV_APP_EXTENSIONS)
-    NSEnumerator *frontToBackWindows = [UIApplication.sharedApplication.windows reverseObjectEnumerator];
-    for (UIWindow *window in frontToBackWindows) {
-        BOOL windowOnMainScreen = window.screen == UIScreen.mainScreen;
-        BOOL windowIsVisible = !window.hidden && window.alpha > 0;
-        BOOL windowLevelSupported = (window.windowLevel >= UIWindowLevelNormal && window.windowLevel <= self.maxSupportedWindowLevel);
-        BOOL windowKeyWindow = window.isKeyWindow;
-			
-        if(windowOnMainScreen && windowIsVisible && windowLevelSupported && windowKeyWindow) {
-            return window;
-        }
-    }
-#endif
     return nil;
 }
     
